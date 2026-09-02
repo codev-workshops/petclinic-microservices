@@ -11,6 +11,19 @@ logging:
       springframework:
         boot: INFO
         web: INFO
+  structured:
+    format:
+      console: ecs
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        readiness:
+          include: readinessState
 
 ---
 spring:
