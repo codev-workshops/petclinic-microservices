@@ -10,3 +10,18 @@ spring:
         native:
           searchLocations: file:///${GIT_REPO}
 
+logging:
+  structured:
+    format:
+      console: ecs
+
+management:
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: always
+      group:
+        readiness:
+          include: readinessState
+
