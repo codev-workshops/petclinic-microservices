@@ -1,0 +1,67 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: discovery-server
+  labels:
+    app: discovery-server
+spec:
+  # Fixed single replica: this is infra/singleton (no HPA, see README).
+  replicas: 1
+  selector:
+    matchLabels:
+      app: discovery-server
+  template:
+    metadata:
+      labels:
+        app: discovery-server
+    spec:
+      # Optional: reduces crash-loops by waiting for config-server before the JVM
+      # starts. Readiness probes + restart backoff remain the primary ordering
+      # mechanism; this is just a courtesy wait.
+      initContainers:
+        - name: wait-for-config-server
+          image: curlimages/curl:8.10.1
+          command:
+            - sh
+            - -c
+            - |
+              until curl -sf -o /dev/null "$CONFIG_SERVER_URL"; do
+                echo "waiting for config-server..."; sleep 5;
+              done
+          env:
+            - name: CONFIG_SERVER_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: petclinic-config
+                  key: CONFIG_SERVER_URL
+      containers:
+        - name: discovery-server
+          image: springcommunity/spring-petclinic-discovery-server:latest
+          ports:
+            - name: http
+              containerPort: 8761
+          envFrom:
+            - configMapRef:
+                name: petclinic-config
+          resources:
+            requests:
+              cpu: 250m
+              memory: 256Mi
+            limits:
+              memory: 512Mi
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 60
+            periodSeconds: 15
+            timeoutSeconds: 5
+            failureThreshold: 6
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 12

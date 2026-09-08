@@ -1,0 +1,28 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: spring-petclinic
+
+resources:
+  - configmap.yaml
+  - ingress.yaml
+  # Infra (start first): no HPA, fixed 1 replica each.
+  - config-server/deployment.yaml
+  - config-server/service.yaml
+  - discovery-server/deployment.yaml
+  - discovery-server/service.yaml
+  # Edge + business services: HPA on CPU.
+  - api-gateway/deployment.yaml
+  - api-gateway/service.yaml
+  - api-gateway/hpa.yaml
+  - customers-service/deployment.yaml
+  - customers-service/service.yaml
+  - customers-service/hpa.yaml
+  - visits-service/deployment.yaml
+  - visits-service/service.yaml
+  - visits-service/hpa.yaml
+  - vets-service/deployment.yaml
+  - vets-service/service.yaml
+  - vets-service/hpa.yaml

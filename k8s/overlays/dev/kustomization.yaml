@@ -1,0 +1,46 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: petclinic-dev
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+configMapGenerator:
+  - name: petclinic-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=docker,dev
+
+patches:
+  # Dev Ingress host.
+  - target:
+      kind: Ingress
+      name: petclinic
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: dev.petclinic.local
+  # Smaller footprint for every Deployment.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 1
+      - op: replace
+        path: /spec/template/spec/containers/0/resources/requests
+        value:
+          cpu: 100m
+          memory: 192Mi
+  # HPA min 1 / max 2 in dev.
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 1
+      - op: replace
+        path: /spec/maxReplicas
+        value: 2

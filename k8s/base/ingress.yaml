@@ -1,0 +1,29 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: petclinic
+  annotations:
+    # Adjust for your ingress controller (e.g. nginx, traefik, ALB).
+    kubernetes.io/ingress.class: nginx
+spec:
+  rules:
+    # All traffic (UI at "/" and every "/api/**" route) goes to the gateway.
+    # The gateway itself fans out /api/customer, /api/visit, /api/vet, /api/genai
+    # to backend services via Eureka, so no direct backend routes are exposed here.
+    - host: petclinic.local
+      http:
+        paths:
+          - path: /api
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: api-gateway
+                port:
+                  number: 8080

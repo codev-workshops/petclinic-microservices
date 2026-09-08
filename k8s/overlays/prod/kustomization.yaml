@@ -1,0 +1,69 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: petclinic-prod
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+# Pin image tags instead of :latest. Bump here on release.
+images:
+  - name: springcommunity/spring-petclinic-config-server
+    newTag: "3.4.1"
+  - name: springcommunity/spring-petclinic-discovery-server
+    newTag: "3.4.1"
+  - name: springcommunity/spring-petclinic-api-gateway
+    newTag: "3.4.1"
+  - name: springcommunity/spring-petclinic-customers-service
+    newTag: "3.4.1"
+  - name: springcommunity/spring-petclinic-visits-service
+    newTag: "3.4.1"
+  - name: springcommunity/spring-petclinic-vets-service
+    newTag: "3.4.1"
+
+configMapGenerator:
+  - name: petclinic-config
+    behavior: merge
+    literals:
+      - SPRING_PROFILES_ACTIVE=docker,prod
+
+patches:
+  # Prod Ingress host.
+  - target:
+      kind: Ingress
+      name: petclinic
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: petclinic.example.com
+  # Production resources for all Deployments.
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 500m
+            memory: 512Mi
+          limits:
+            cpu: "1"
+            memory: 1Gi
+  # HPA-managed services start at 3 replicas and can scale to 10.
+  - target:
+      kind: Deployment
+      labelSelector: "app in (api-gateway, customers-service, visits-service, vets-service)"
+    patch: |-
+      - op: replace
+        path: /spec/replicas
+        value: 3
+  - target:
+      kind: HorizontalPodAutoscaler
+    patch: |-
+      - op: replace
+        path: /spec/minReplicas
+        value: 3
+      - op: replace
+        path: /spec/maxReplicas
+        value: 10

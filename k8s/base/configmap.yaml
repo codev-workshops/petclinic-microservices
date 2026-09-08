@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: petclinic-config
+data:
+  # Spring Cloud Config server, resolved via the k8s Service DNS name.
+  CONFIG_SERVER_URL: http://config-server:8888/
+  # Eureka registry, resolved via the k8s Service DNS name.
+  EUREKA_CLIENT_SERVICEURL_DEFAULTZONE: http://discovery-server:8761/eureka/
+  # The "docker" profile in the external config repo already points at
+  # config-server / discovery-server host names, which match the k8s Services.
+  SPRING_PROFILES_ACTIVE: docker
+  # Register with Eureka by pod IP rather than hostname so peers can reach pods.
+  EUREKA_INSTANCE_PREFERIPADDRESS: "true"
