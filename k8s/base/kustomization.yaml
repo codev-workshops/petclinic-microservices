@@ -1,0 +1,62 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+# Service names (config-server, discovery-server, ...) are the DNS names the services use to reach
+# each other, so overlays must not add a namePrefix/nameSuffix; isolate environments by namespace.
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: petclinic
+    includeTemplates: true
+
+resources:
+  - config-server/deployment.yaml
+  - config-server/service.yaml
+  - config-server/hpa.yaml
+  - discovery-server/deployment.yaml
+  - discovery-server/service.yaml
+  - discovery-server/hpa.yaml
+  - api-gateway/deployment.yaml
+  - api-gateway/service.yaml
+  - api-gateway/hpa.yaml
+  - customers-service/deployment.yaml
+  - customers-service/service.yaml
+  - customers-service/hpa.yaml
+  - visits-service/deployment.yaml
+  - visits-service/service.yaml
+  - visits-service/hpa.yaml
+  - vets-service/deployment.yaml
+  - vets-service/service.yaml
+  - vets-service/hpa.yaml
+  - ingress.yaml
+  - networkpolicy.yaml
+
+configMapGenerator:
+  # Environment shared by every service (overlays merge into it)
+  - name: petclinic-env
+    literals:
+      # The docker profile in the images and in the config repo resolves config-server, discovery-server
+      # and tracing-server by DNS name, which matches the Service names here
+      - SPRING_PROFILES_ACTIVE=docker
+      - CONFIG_SERVER_URL=http://config-server:8888
+      - EUREKA_URL=http://discovery-server:8761/eureka/
+      - JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0 -XX:+ExitOnOutOfMemoryError
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+  # Per-service application properties, mounted at /etc/petclinic/config/application.yml
+  - name: config-server-config
+    files:
+      - application.yml=config-server/application.yml
+  - name: discovery-server-config
+    files:
+      - application.yml=discovery-server/application.yml
+  - name: api-gateway-config
+    files:
+      - application.yml=api-gateway/application.yml
+  - name: customers-service-config
+    files:
+      - application.yml=customers-service/application.yml
+  - name: visits-service-config
+    files:
+      - application.yml=visits-service/application.yml
+  - name: vets-service-config
+    files:
+      - application.yml=vets-service/application.yml

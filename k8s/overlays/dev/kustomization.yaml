@@ -1,0 +1,56 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: petclinic-dev
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: dev
+
+resources:
+  - namespace.yaml
+  - ../../base
+
+# Images built locally with: ./mvnw clean install -P buildDocker
+images:
+  - name: springcommunity/spring-petclinic-config-server
+    newTag: latest
+  - name: springcommunity/spring-petclinic-discovery-server
+    newTag: latest
+  - name: springcommunity/spring-petclinic-api-gateway
+    newTag: latest
+  - name: springcommunity/spring-petclinic-customers-service
+    newTag: latest
+  - name: springcommunity/spring-petclinic-visits-service
+    newTag: latest
+  - name: springcommunity/spring-petclinic-vets-service
+    newTag: latest
+
+configMapGenerator:
+  - name: petclinic-env
+    behavior: merge
+    literals:
+      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_SAMPLES=DEBUG
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=1.0
+
+patches:
+  - path: hpa-patch.yaml
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 100m
+            memory: 384Mi
+          limits:
+            cpu: "1"
+            memory: 768Mi
+  - target:
+      kind: Ingress
+      name: petclinic
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: petclinic.localhost

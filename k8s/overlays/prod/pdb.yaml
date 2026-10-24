@@ -1,0 +1,51 @@
+# Keep at least one pod of each multi-replica service during node drains and upgrades.
+# No PDB for discovery-server: it runs a single replica and a PDB would block drains.
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: config-server
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: config-server
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: api-gateway
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: api-gateway
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: customers-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: customers-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: visits-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: visits-service
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: vets-service
+spec:
+  minAvailable: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: vets-service

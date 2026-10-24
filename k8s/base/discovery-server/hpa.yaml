@@ -1,0 +1,23 @@
+# Discovery Server: Eureka runs in standalone mode (registerWithEureka/fetchRegistry=false, no peer
+# replication), so replicas behind one Service would each hold a partial registry. Pinned to exactly one replica.
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: discovery-server
+  labels:
+    app.kubernetes.io/name: discovery-server
+    app.kubernetes.io/component: infrastructure
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: discovery-server
+  minReplicas: 1
+  maxReplicas: 1
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 80

@@ -1,0 +1,31 @@
+# config-server (Spring Cloud Config Server): Kubernetes-specific properties.
+# Mounted at /etc/petclinic/config and loaded via SPRING_CONFIG_ADDITIONAL_LOCATION;
+# overrides the Config Server values (the config repo sets spring.cloud.config.override-none=true).
+server:
+  port: 8888
+  shutdown: graceful
+spring:
+  cloud:
+    config:
+      server:
+        git:
+          uri: ${CONFIG_GIT_URI:https://github.com/spring-petclinic/spring-petclinic-microservices-config}
+          default-label: ${CONFIG_GIT_LABEL:main}
+          clone-on-start: true
+          timeout: 10
+management:
+  endpoint:
+    health:
+      # /actuator/health/liveness and /actuator/health/readiness, used by the Deployment probes
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        # The shared config repo exposes '*'; only expose what Kubernetes and Prometheus need
+        include: health,info,prometheus,metrics
