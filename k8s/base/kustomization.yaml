@@ -28,6 +28,7 @@ resources:
   - vets-service/service.yaml
   - vets-service/hpa.yaml
   - ingress.yaml
+  - networkpolicy.yaml
 
 configMapGenerator:
   # Environment shared by every service (overlays merge into it)

@@ -7,7 +7,8 @@ customers-service, visits-service and vets-service. genai-service and admin-serv
 k8s/
 ├── base/                     # per service: deployment.yaml, service.yaml, hpa.yaml, application.yml
 │   ├── kustomization.yaml    # ConfigMaps are generated here (hash suffix => rollout on change)
-│   └── ingress.yaml          # the only external entry point -> api-gateway
+│   ├── ingress.yaml          # the only external entry point -> api-gateway
+│   └── networkpolicy.yaml    # default-deny ingress + per-service allow rules
 └── overlays/
     ├── dev/                  # petclinic-dev: small requests, 1 replica min, HSQLDB, host petclinic.localhost
     └── prod/                 # petclinic-prod: HA replicas, PDBs, zone/host spread, MySQL, TLS host
@@ -35,6 +36,25 @@ k8s/
 - **Ingress**: routes `/` to `api-gateway`, which serves the UI and forwards `/api/**` via Eureka. The
   gateway's actuator runs on a separate port so it is not reachable through the Ingress.
 - Deployments omit `replicas` so `kubectl apply` never fights the HPA.
+
+## NetworkPolicies
+
+`base/networkpolicy.yaml` makes the API Gateway the only service reachable from outside the namespace:
+
+| Policy | Selects | Allows ingress from |
+|---|---|---|
+| `default-deny-ingress` | all `app.kubernetes.io/part-of: petclinic` pods | nothing |
+| `allow-ingress-controller-to-api-gateway` | api-gateway | the `ingress-nginx` namespace, port 8080 only (actuator port 8090 stays closed) |
+| `allow-api-gateway-to-backends` | `app.kubernetes.io/component: backend` (customers, visits, vets) | api-gateway pods, ports 8081-8083 |
+| `allow-petclinic-to-config-server` | config-server | PetClinic pods, port 8888 |
+| `allow-petclinic-to-discovery-server` | discovery-server | PetClinic pods, port 8761 |
+
+- The policies need a CNI that enforces NetworkPolicy (Calico, Cilium, kindnet >= v0.24, ...); otherwise they are ignored.
+- Kubelet probes are not affected. Egress is not restricted, so MySQL, DNS and the Config Server git repo keep working.
+- If your ingress controller runs in a different namespace, patch the `namespaceSelector` of
+  `allow-ingress-controller-to-api-gateway` in the overlay.
+- Prometheus (or any other in-cluster client) cannot scrape `/actuator/prometheus` until you add an allow rule
+  for its namespace.
 
 ## Prerequisites
 
