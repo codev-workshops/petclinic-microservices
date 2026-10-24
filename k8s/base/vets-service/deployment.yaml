@@ -27,6 +27,11 @@ spec:
         prometheus.io/port: "8083"
     spec:
       terminationGracePeriodSeconds: 45
+      # Resolve A/AAAA sequentially: parallel lookups on one socket can hit a conntrack race under
+      # NetworkPolicy enforcement (seen with kindnet), making the JVM fail with UnknownHostException.
+      dnsConfig:
+        options:
+          - name: single-request-reopen
       securityContext:
         runAsNonRoot: true
         runAsUser: 1000

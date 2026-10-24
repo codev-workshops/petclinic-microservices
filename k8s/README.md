@@ -51,6 +51,9 @@ k8s/
 
 - The policies need a CNI that enforces NetworkPolicy (Calico, Cilium, kindnet >= v0.24, ...); otherwise they are ignored.
 - Kubelet probes are not affected. Egress is not restricted, so MySQL, DNS and the Config Server git repo keep working.
+- Every pod sets `dnsConfig` option `single-request-reopen`. Without it, on kind (kindnet) the JVMs often failed at
+  startup with `UnknownHostException` once the policies were applied: glibc sends the A and AAAA lookups in parallel
+  on one socket, and that hits a conntrack race under policy enforcement. With the option, restarts went to 0.
 - If your ingress controller runs in a different namespace, patch the `namespaceSelector` of
   `allow-ingress-controller-to-api-gateway` in the overlay.
 - Prometheus (or any other in-cluster client) cannot scrape `/actuator/prometheus` until you add an allow rule
