@@ -1,0 +1,121 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+
+namespace: petclinic-prod
+
+labels:
+  - pairs:
+      app.kubernetes.io/environment: prod
+
+resources:
+  - namespace.yaml
+  - ../../base
+  - pdb.yaml
+
+# Pin released images; point newName at your registry, e.g.
+#   kustomize edit set image springcommunity/spring-petclinic-api-gateway=registry.example.com/petclinic/api-gateway:4.0.1
+images:
+  - name: springcommunity/spring-petclinic-config-server
+    newTag: "4.0.1"
+  - name: springcommunity/spring-petclinic-discovery-server
+    newTag: "4.0.1"
+  - name: springcommunity/spring-petclinic-api-gateway
+    newTag: "4.0.1"
+  - name: springcommunity/spring-petclinic-customers-service
+    newTag: "4.0.1"
+  - name: springcommunity/spring-petclinic-visits-service
+    newTag: "4.0.1"
+  - name: springcommunity/spring-petclinic-vets-service
+    newTag: "4.0.1"
+
+configMapGenerator:
+  - name: petclinic-env
+    behavior: merge
+    literals:
+      - MANAGEMENT_TRACING_SAMPLING_PROBABILITY=0.1
+  # Shared MySQL database for the backend services (the config repo's "mysql" profile).
+  # Credentials come from the petclinic-db-credentials Secret, which is created out of band (see README).
+  - name: petclinic-db
+    literals:
+      - SPRING_DATASOURCE_URL=jdbc:mysql://petclinic-mysql:3306/petclinic
+
+patches:
+  - path: hpa-patch.yaml
+  - target:
+      kind: Deployment
+    patch: |-
+      - op: replace
+        path: /spec/template/spec/containers/0/resources
+        value:
+          requests:
+            cpu: 500m
+            memory: 768Mi
+          limits:
+            cpu: "2"
+            memory: 1Gi
+      - op: add
+        path: /spec/template/spec/topologySpreadConstraints
+        value:
+          - maxSkew: 1
+            topologyKey: topology.kubernetes.io/zone
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/part-of: petclinic
+            matchLabelKeys:
+              - pod-template-hash
+          - maxSkew: 1
+            topologyKey: kubernetes.io/hostname
+            whenUnsatisfiable: ScheduleAnyway
+            labelSelector:
+              matchLabels:
+                app.kubernetes.io/part-of: petclinic
+            matchLabelKeys:
+              - pod-template-hash
+  # In-memory HSQLDB is per pod; multi-replica backend services need a shared database
+  - target:
+      kind: Deployment
+      labelSelector: app.kubernetes.io/component=backend
+    patch: |-
+      - op: add
+        path: /spec/template/spec/containers/0/envFrom/-
+        value:
+          configMapRef:
+            name: petclinic-db
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SPRING_PROFILES_ACTIVE
+          value: docker,mysql
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SPRING_DATASOURCE_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: petclinic-db-credentials
+              key: username
+      - op: add
+        path: /spec/template/spec/containers/0/env/-
+        value:
+          name: SPRING_DATASOURCE_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: petclinic-db-credentials
+              key: password
+  - target:
+      kind: Ingress
+      name: petclinic
+    patch: |-
+      - op: replace
+        path: /spec/rules/0/host
+        value: petclinic.example.com
+      - op: add
+        path: /spec/tls
+        value:
+          - hosts:
+              - petclinic.example.com
+            secretName: petclinic-tls
+      - op: add
+        path: /metadata/annotations/nginx.ingress.kubernetes.io~1force-ssl-redirect
+        value: "true"

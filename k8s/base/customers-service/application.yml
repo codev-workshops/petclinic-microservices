@@ -1,0 +1,32 @@
+# customers-service (owners and pets API): Kubernetes-specific properties.
+# Mounted at /etc/petclinic/config and loaded via SPRING_CONFIG_ADDITIONAL_LOCATION;
+# overrides the Config Server values (the config repo sets spring.cloud.config.override-none=true).
+spring:
+  config:
+    import: configserver:${CONFIG_SERVER_URL:http://config-server:8888}
+server:
+  port: 8081
+  shutdown: graceful
+eureka:
+  client:
+    serviceUrl:
+      defaultZone: ${EUREKA_URL:http://discovery-server:8761/eureka/}
+  instance:
+    # Pod hostnames are not resolvable across the cluster; register the pod IP
+    prefer-ip-address: true
+management:
+  endpoint:
+    health:
+      # /actuator/health/liveness and /actuator/health/readiness, used by the Deployment probes
+      probes:
+        enabled: true
+  health:
+    livenessstate:
+      enabled: true
+    readinessstate:
+      enabled: true
+  endpoints:
+    web:
+      exposure:
+        # The shared config repo exposes '*'; only expose what Kubernetes and Prometheus need
+        include: health,info,prometheus,metrics

@@ -1,0 +1,40 @@
+# Prod: HA for everything that can run more than one replica. discovery-server stays at 1 (base).
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: config-server
+spec:
+  minReplicas: 2
+  maxReplicas: 3
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: api-gateway
+spec:
+  minReplicas: 3
+  maxReplicas: 12
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: customers-service
+spec:
+  minReplicas: 2
+  maxReplicas: 8
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: visits-service
+spec:
+  minReplicas: 2
+  maxReplicas: 8
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: vets-service
+spec:
+  minReplicas: 2
+  maxReplicas: 4
