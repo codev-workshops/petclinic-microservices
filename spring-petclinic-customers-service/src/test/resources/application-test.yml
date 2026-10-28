@@ -14,5 +14,9 @@ eureka:
   client:
     enabled: false
 
-logging.level.org.springframework: INFO
+management:
+  endpoint:
+    health:
+      validate-group-membership: false
 
+logging.level.org.springframework: INFO

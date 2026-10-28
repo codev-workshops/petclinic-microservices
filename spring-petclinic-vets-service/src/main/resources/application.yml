@@ -8,6 +8,18 @@ spring:
   profiles:
     active: production
 
+management:
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+      group:
+        liveness:
+          include: livenessState
+        readiness:
+          include: readinessState,db,discoveryComposite
+
 ---
 spring:
   config:

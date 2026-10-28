@@ -1,31 +1,35 @@
 services:
   config-server:
-    image: springcommunity/spring-petclinic-config-server
+    image: petclinic-local/spring-petclinic-config-server
+    pull_policy: never
     container_name: config-server
     deploy:
       resources:
         limits:
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-I", "http://config-server:8888"]
-      interval: 5s
+      test: ["CMD", "curl", "-fsS", "http://localhost:8888/actuator/health/readiness"]
+      interval: 10s
       timeout: 5s
-      retries: 10
+      retries: 15
+      start_period: 30s
     ports:
      - 8888:8888
 
   discovery-server:
-    image: springcommunity/spring-petclinic-discovery-server
+    image: petclinic-local/spring-petclinic-discovery-server
+    pull_policy: never
     container_name: discovery-server
     deploy:
       resources:
         limits:
           memory: 512M
     healthcheck:
-      test: ["CMD", "curl", "-f", "http://discovery-server:8761"]
-      interval: 5s
-      timeout: 3s
-      retries: 10
+      test: ["CMD", "curl", "-fsS", "http://localhost:8761/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -33,12 +37,19 @@ services:
      - 8761:8761
 
   customers-service:
-    image: springcommunity/spring-petclinic-customers-service
+    image: petclinic-local/spring-petclinic-customers-service
+    pull_policy: never
     container_name: customers-service
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8081/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -48,12 +59,19 @@ services:
     - 8081:8081
 
   visits-service:
-    image: springcommunity/spring-petclinic-visits-service
+    image: petclinic-local/spring-petclinic-visits-service
+    pull_policy: never
     container_name: visits-service
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8082/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -63,12 +81,19 @@ services:
      - 8082:8082
 
   vets-service:
-    image: springcommunity/spring-petclinic-vets-service
+    image: petclinic-local/spring-petclinic-vets-service
+    pull_policy: never
     container_name: vets-service
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8083/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -79,16 +104,24 @@ services:
 
 
   genai-service:
-    image: springcommunity/spring-petclinic-genai-service
+    image: petclinic-local/spring-petclinic-genai-service
+    pull_policy: never
     container_name: genai-service
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}
-      - AZURE_OPENAI_KEY=${AZURE_OPENAI_KEY}
-      - AZURE_OPENAI_ENDPOINT=${AZURE_OPENAI_ENDPOINT}
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-demo}
+      AZURE_OPENAI_KEY: ${AZURE_OPENAI_KEY:-}
+      AZURE_OPENAI_ENDPOINT: ${AZURE_OPENAI_ENDPOINT:-}
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      # Keep GenAI available without an API key; readiness is intentionally OUT_OF_SERVICE then.
+      test: ["CMD", "curl", "-fsS", "http://localhost:8084/actuator/health/liveness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -99,16 +132,31 @@ services:
 
 
   api-gateway:
-    image: springcommunity/spring-petclinic-api-gateway
+    image: petclinic-local/spring-petclinic-api-gateway
+    pull_policy: never
     container_name: api-gateway
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8080/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
       discovery-server:
+        condition: service_healthy
+      customers-service:
+        condition: service_healthy
+      visits-service:
+        condition: service_healthy
+      vets-service:
+        condition: service_healthy
+      genai-service:
         condition: service_healthy
     ports:
      - 8080:8080
@@ -120,16 +168,29 @@ services:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9411/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     ports:
      - 9411:9411
 
   admin-server:
-    image: springcommunity/spring-petclinic-admin-server
+    image: petclinic-local/spring-petclinic-admin-server
+    pull_policy: never
     container_name: admin-server
     deploy:
       resources:
         limits:
           memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:9090/actuator/health/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     depends_on:
       config-server:
         condition: service_healthy
@@ -147,6 +208,12 @@ services:
       resources:
         limits:
           memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:3000/api/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     ports:
     - 3030:3000
 
@@ -157,5 +224,11 @@ services:
       resources:
         limits:
           memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:9090/-/ready"]
+      interval: 10s
+      timeout: 5s
+      retries: 15
+      start_period: 30s
     ports:
     - 9091:9090
