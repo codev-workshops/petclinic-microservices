@@ -38,7 +38,7 @@ management:
         liveness:
           include: livenessState
         readiness:
-          include: readinessState,discoveryComposite,genAiCredentials
+          include: readinessState,db,discoveryComposite,genAiCredentials
 
 logging:
   level:
