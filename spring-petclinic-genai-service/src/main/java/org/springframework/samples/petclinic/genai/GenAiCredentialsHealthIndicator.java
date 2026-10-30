@@ -9,7 +9,8 @@ import org.springframework.stereotype.Component;
 public class GenAiCredentialsHealthIndicator implements HealthIndicator {
 
     private static final String MISSING_CREDENTIALS_REASON =
-        "No OpenAI/Azure OpenAI API key configured (set OPENAI_API_KEY or AZURE_OPENAI_KEY)";
+        "No OpenAI/Azure OpenAI API key configured (set spring.ai.openai.api-key in creds.yaml "
+            + "or OPENAI_API_KEY, or spring.ai.azure.openai.api-key in creds.yaml or AZURE_OPENAI_KEY)";
 
     private final Environment environment;
 
@@ -19,16 +20,29 @@ public class GenAiCredentialsHealthIndicator implements HealthIndicator {
 
     @Override
     public Health health() {
-        if (isConfigured(environment.getProperty("OPENAI_API_KEY"))) {
+        if (isConfigured(getProperty("spring.ai.openai.api-key"))
+            || isConfigured(getProperty("OPENAI_API_KEY"))) {
             return Health.up().withDetail("provider", "openai").build();
         }
-        if (isConfigured(environment.getProperty("AZURE_OPENAI_KEY"))) {
+        if (isConfigured(getProperty("spring.ai.azure.openai.api-key"))
+            || isConfigured(getProperty("AZURE_OPENAI_KEY"))) {
             return Health.up().withDetail("provider", "azure-openai").build();
         }
         return Health.outOfService().withDetail("reason", MISSING_CREDENTIALS_REASON).build();
     }
 
+    private String getProperty(String property) {
+        try {
+            return environment.getProperty(property);
+        } catch (IllegalArgumentException exception) {
+            return null;
+        }
+    }
+
     private boolean isConfigured(String key) {
-        return key != null && !key.isBlank() && !"demo".equalsIgnoreCase(key);
+        return key != null
+            && !key.isBlank()
+            && !key.startsWith("${")
+            && !"demo".equalsIgnoreCase(key);
     }
 }

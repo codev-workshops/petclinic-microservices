@@ -31,7 +31,7 @@ spring:
 management:
   endpoint:
     health:
-      show-details: always
+      show-components: always
       probes:
         enabled: true
       group:

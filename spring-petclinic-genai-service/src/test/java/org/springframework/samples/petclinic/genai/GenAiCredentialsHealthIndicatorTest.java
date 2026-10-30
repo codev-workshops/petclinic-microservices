@@ -35,6 +35,14 @@ class GenAiCredentialsHealthIndicatorTest {
     }
 
     @Test
+    void reportsOutOfServiceForSpringAiDemoPlaceholder() {
+        MockEnvironment environment = new MockEnvironment()
+            .withProperty("spring.ai.openai.api-key", "demo");
+
+        assertEquals(Status.OUT_OF_SERVICE, health(environment).getStatus());
+    }
+
+    @Test
     void reportsOpenAiProviderWithoutExposingCredential() {
         String key = "openai-test-secret";
         MockEnvironment environment = new MockEnvironment()
@@ -48,10 +56,44 @@ class GenAiCredentialsHealthIndicatorTest {
     }
 
     @Test
+    void reportsOpenAiProviderFromSpringAiPropertyWithoutExposingCredential() {
+        String key = "sk-x";
+        MockEnvironment environment = new MockEnvironment()
+            .withProperty("spring.ai.openai.api-key", key);
+
+        Health health = health(environment);
+
+        assertEquals(Status.UP, health.getStatus());
+        assertEquals("openai", health.getDetails().get("provider"));
+        assertFalse(health.getDetails().toString().contains(key));
+    }
+
+    @Test
+    void ignoresUnresolvedSpringAiAzureProperty() {
+        MockEnvironment environment = new MockEnvironment()
+            .withProperty("spring.ai.azure.openai.api-key", "${AZURE_OPENAI_KEY}");
+
+        assertEquals(Status.OUT_OF_SERVICE, health(environment).getStatus());
+    }
+
+    @Test
     void reportsAzureProviderWithoutExposingCredential() {
         String key = "azure-test-secret";
         MockEnvironment environment = new MockEnvironment()
             .withProperty("AZURE_OPENAI_KEY", key);
+
+        Health health = health(environment);
+
+        assertEquals(Status.UP, health.getStatus());
+        assertEquals("azure-openai", health.getDetails().get("provider"));
+        assertFalse(health.getDetails().toString().contains(key));
+    }
+
+    @Test
+    void reportsAzureProviderFromSpringAiPropertyWithoutExposingCredential() {
+        String key = "azure-test-secret";
+        MockEnvironment environment = new MockEnvironment()
+            .withProperty("spring.ai.azure.openai.api-key", key);
 
         Health health = health(environment);
 

@@ -68,8 +68,9 @@ Each Spring service exposes `/actuator/health/liveness` and `/actuator/health/re
 | API Gateway | `livenessState` | `readinessState`, `discoveryComposite`, `lbRoutes` |
 | Admin Server | `livenessState` | `readinessState`, `discoveryComposite` |
 
-The regular `/actuator/health` endpoint shows the complete health tree. GenAI readiness is
-`OUT_OF_SERVICE` when neither `OPENAI_API_KEY` nor `AZURE_OPENAI_KEY` is configured. Compose
+The health endpoints show component statuses while hiding health details. GenAI readiness is
+`OUT_OF_SERVICE` when neither `spring.ai.openai.api-key` nor `spring.ai.azure.openai.api-key`
+(or their `OPENAI_API_KEY` and `AZURE_OPENAI_KEY` environment equivalents) is configured. Compose
 uses GenAI liveness for its container healthcheck so the service can still start and the gateway
 can still serve other routes without an AI key. A chat request without a working provider key is
 handled by GenAI's chat endpoint with the response `Chat is currently unavailable. Please try
