@@ -32,20 +32,20 @@ You can tell Config Server to use your local Git repository by using `native` Sp
 
 ## Starting services locally with docker-compose
 In order to start entire infrastructure using Docker, you have to build images by executing
-``bash
-./mvnw clean install -P buildDocker
-``
+```bash
+./mvnw clean install -PbuildDocker -DskipTests -Ddocker.image.prefix=petclinic-local
+```
 This requires `Docker` or `Docker desktop` to be installed and running.
 
 Alternatively you can also build all the images on `Podman`, which requires Podman or Podman Desktop to be installed and running.
 ```bash
-./mvnw clean install -PbuildDocker -Dcontainer.executable=podman
+./mvnw clean install -PbuildDocker -Dcontainer.executable=podman -Ddocker.image.prefix=petclinic-local
 ```
 By default, the Docker OCI image is build for an `linux/amd64` platform.
 For other architectures, you could change it by using the `-Dcontainer.platform` maven command line argument.
 For instance, if you target container images for an Apple M2, you could use the command line with the `linux/arm64` architecture:
 ```bash
-./mvnw clean install -P buildDocker -Dcontainer.platform="linux/arm64"
+./mvnw clean install -PbuildDocker -Dcontainer.platform="linux/arm64" -Ddocker.image.prefix=petclinic-local
 ```
 
 Once images are ready, you can start them with a single command
@@ -56,6 +56,26 @@ and the [healthcheck](https://github.com/compose-spec/compose-spec/blob/main/spe
 After starting services, it takes a while for API Gateway to be in sync with service registry,
 so don't be scared of initial Spring Cloud Gateway timeouts. You can track services availability using Eureka dashboard
 available by default at http://localhost:8761.
+
+Each Spring service exposes `/actuator/health/liveness` and `/actuator/health/readiness`:
+
+| Service | Liveness | Readiness contributors |
+| --- | --- | --- |
+| Config Server | `livenessState` | `readinessState`, `configServer` |
+| Discovery Server | `livenessState` | `readinessState` |
+| Customers, Visits, Vets | `livenessState` | `readinessState`, `db`, `discoveryComposite` |
+| GenAI | `livenessState` | `readinessState`, `discoveryComposite`, `genAiCredentials` |
+| API Gateway | `livenessState` | `readinessState`, `discoveryComposite`, `lbRoutes` |
+| Admin Server | `livenessState` | `readinessState`, `discoveryComposite` |
+
+The health endpoints show component statuses while hiding health details. GenAI readiness is
+`OUT_OF_SERVICE` when neither `spring.ai.openai.api-key` nor `spring.ai.azure.openai.api-key`
+(or their `OPENAI_API_KEY` and `AZURE_OPENAI_KEY` environment equivalents) is configured. Compose
+uses GenAI liveness for its container healthcheck so the service can still start and the gateway
+can still serve other routes without an AI key. A chat request without a working provider key is
+handled by GenAI's chat endpoint with the response `Chat is currently unavailable. Please try
+again later.`; if the GenAI route itself is unavailable, the gateway circuit-breaker fallback
+returns the same message with HTTP 503.
 
 The `main` branch uses an Eclipse Temurin with Java 17 as Docker base image.
 

@@ -1,2 +1,6 @@
 spring.cloud.config.enabled: false
 eureka.client.enabled: false
+management:
+  endpoint:
+    health:
+      validate-group-membership: false
