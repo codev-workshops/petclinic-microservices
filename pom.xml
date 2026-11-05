@@ -28,6 +28,8 @@
 
     <properties>
         <java.version>17</java.version>
+        <coverage.line.minimum>0.95</coverage.line.minimum>
+        <coverage.branch.minimum>0.85</coverage.branch.minimum>
 
         <spring-cloud.version>2025.1.0</spring-cloud.version>
         <chaos-monkey-spring-boot.version>3.1.0</chaos-monkey-spring-boot.version>
@@ -73,6 +75,84 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <version>0.8.16</version>
+                <configuration>
+                    <excludes>
+                        <!-- Customers entry point contains only SpringApplication.run. -->
+                        <exclude>**/CustomersServiceApplication.class</exclude>
+                        <!-- Visits entry point contains only SpringApplication.run. -->
+                        <exclude>**/VisitsServiceApplication.class</exclude>
+                        <!-- Vets entry point contains only SpringApplication.run. -->
+                        <exclude>**/VetsServiceApplication.class</exclude>
+                        <!-- GenAI entry point contains only SpringApplication.run; AI beans remain measured. -->
+                        <exclude>**/GenAIServiceApplication.class</exclude>
+                        <!-- Admin server contains annotations and main only; its empty bundle has no ratio to enforce. -->
+                        <exclude>**/SpringBootAdminApplication.class</exclude>
+                        <!-- Config server contains annotations and main only; its empty bundle has no ratio to enforce. -->
+                        <exclude>**/ConfigServerApplication.class</exclude>
+                        <!-- Discovery server contains annotations and main only; its empty bundle has no ratio to enforce. -->
+                        <exclude>**/DiscoveryServerApplication.class</exclude>
+                    </excludes>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals><goal>prepare-agent</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>test</phase>
+                        <goals><goal>report</goal></goals>
+                    </execution>
+                    <execution>
+                        <id>coverage-check</id>
+                        <phase>verify</phase>
+                        <goals><goal>check</goal></goals>
+                        <configuration>
+                            <haltOnFailure>true</haltOnFailure>
+                            <rules>
+                                <rule>
+                                    <element>BUNDLE</element>
+                                    <limits>
+                                        <limit>
+                                            <counter>LINE</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.line.minimum}</minimum>
+                                        </limit>
+                                        <limit>
+                                            <counter>BRANCH</counter>
+                                            <value>COVEREDRATIO</value>
+                                            <minimum>${coverage.branch.minimum}</minimum>
+                                        </limit>
+                                    </limits>
+                                </rule>
+                            </rules>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <includes>
+                        <include>**/*Test.java</include>
+                        <include>**/*Tests.java</include>
+                    </includes>
+                    <systemPropertyVariables>
+                        <spring.cloud.config.enabled>false</spring.cloud.config.enabled>
+                        <eureka.client.enabled>false</eureka.client.enabled>
+                        <spring.cloud.discovery.enabled>false</spring.cloud.discovery.enabled>
+                    </systemPropertyVariables>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
 
     <profiles>
         <profile>
