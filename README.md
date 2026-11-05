@@ -63,7 +63,8 @@ config server, then discovery server, then the business services, then the API g
 Run `docker compose ps` to see the health status of each container.
 
 An nginx reverse proxy ([docker/nginx/nginx.conf](docker/nginx/nginx.conf)) is the single entry point and the only
-container publishing a port on the host (`80` by default, override with `PROXY_PORT=8000 docker compose up -d`):
+container publishing a port on the host (`80` by default, override with `PROXY_PORT=8000 docker compose up -d`;
+Grafana's root URL and the forwarded `Host` header follow the same port, so redirects stay on the proxy):
 
 | URL                                  | Service                                    |
 |--------------------------------------|--------------------------------------------|

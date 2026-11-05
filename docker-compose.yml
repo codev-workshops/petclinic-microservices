@@ -228,7 +228,8 @@ services:
         limits:
           memory: 256M
     environment:
-      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s/grafana/"
+      # Must match the proxy port the browser uses, or Grafana-built absolute URLs point at the wrong address
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:${PROXY_PORT:-80}/grafana/"
     networks:
       - edge
     healthcheck:
