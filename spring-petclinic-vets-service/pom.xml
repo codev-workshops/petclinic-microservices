@@ -15,7 +15,7 @@
 	</parent>
 
     <properties>
-        <docker.image.exposed.port>8081</docker.image.exposed.port>
+        <docker.image.exposed.port>8083</docker.image.exposed.port>
         <docker.image.dockerfile.dir>${basedir}/../docker</docker.image.dockerfile.dir>
     </properties>
 
@@ -113,6 +113,10 @@
         <dependency>
             <groupId>io.zipkin.reporter2</groupId>
             <artifactId>zipkin-reporter-brave</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-zipkin</artifactId>
         </dependency>
         <dependency>
             <groupId>net.ttddyy.observation</groupId>

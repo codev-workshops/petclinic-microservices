@@ -31,10 +31,15 @@ You can tell Config Server to use your local Git repository by using `native` Sp
 `-Dspring.profiles.active=native -DGIT_REPO=/projects/spring-petclinic-microservices-config`
 
 ## Starting services locally with docker-compose
-In order to start entire infrastructure using Docker, you have to build images by executing
-``bash
+The unified [docker-compose.yml](docker-compose.yml) can build the images itself from the Maven jars:
+```bash
+./mvnw clean package -DskipTests
+docker compose up -d --build
+```
+Alternatively, build the images with the `buildDocker` Maven profile and start them with `docker compose up -d`:
+```bash
 ./mvnw clean install -P buildDocker
-``
+```
 This requires `Docker` or `Docker desktop` to be installed and running.
 
 Alternatively you can also build all the images on `Podman`, which requires Podman or Podman Desktop to be installed and running.
@@ -51,11 +56,32 @@ For instance, if you target container images for an Apple M2, you could use the 
 Once images are ready, you can start them with a single command
 `docker compose up` or `podman-compose up`. 
 
-Containers startup order is coordinated with the `service_healthy` condition of the Docker Compose [depends-on](https://github.com/compose-spec/compose-spec/blob/main/spec.md#depends_on) expression 
-and the [healthcheck](https://github.com/compose-spec/compose-spec/blob/main/spec.md#healthcheck) of the service containers. 
-After starting services, it takes a while for API Gateway to be in sync with service registry,
-so don't be scared of initial Spring Cloud Gateway timeouts. You can track services availability using Eureka dashboard
-available by default at http://localhost:8761.
+Every container has a Docker healthcheck (`/actuator/health` for the Spring Boot services, the native health
+endpoints for Zipkin, Grafana, Prometheus and nginx), and startup order is coordinated with the `service_healthy`
+condition of the Docker Compose [depends-on](https://github.com/compose-spec/compose-spec/blob/main/spec.md#depends_on) expression:
+config server, then discovery server, then the business services, then the API gateway, and finally the reverse proxy.
+Run `docker compose ps` to see the health status of each container.
+
+An nginx reverse proxy ([docker/nginx/nginx.conf](docker/nginx/nginx.conf)) is the single entry point and the only
+container publishing a port on the host (`80` by default, override with `PROXY_PORT=8000 docker compose up -d`;
+Grafana's root URL and the forwarded `Host` header follow the same port, so redirects stay on the proxy):
+
+| URL                                  | Service                                    |
+|--------------------------------------|--------------------------------------------|
+| http://localhost/                    | PetClinic UI and REST API (API Gateway)    |
+| http://localhost/admin               | Spring Boot Admin                          |
+| http://localhost/eureka/             | Eureka dashboard                           |
+| http://localhost/zipkin/             | Zipkin tracing UI                          |
+| http://localhost/grafana/            | Grafana dashboards                         |
+| http://localhost/prometheus/         | Prometheus                                 |
+
+The containers are split across two networks: `petclinic-edge` (reverse proxy and the services it exposes) and
+`petclinic-backend` (config server, discovery server, business services, tracing and metrics). The business services
+and the config server are only reachable from inside the backend network.
+To publish every service port on the host for debugging, add the [docker-compose.debug.yml](docker-compose.debug.yml) override:
+```bash
+docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+```
 
 The `main` branch uses an Eclipse Temurin with Java 17 as Docker base image.
 
@@ -179,12 +205,12 @@ A JMeter load testing script is available to stress the application and generate
 
 ### Using Prometheus
 
-* Prometheus can be accessed from your local machine at http://localhost:9091
+* Prometheus can be accessed from your local machine at http://localhost/prometheus/
 
 ### Using Grafana with Prometheus
 
 * An anonymous access and a Prometheus datasource are setup.
-* A `Spring Petclinic Metrics` Dashboard is available at the URL http://localhost:3030/d/69JXeR0iw/spring-petclinic-metrics.
+* A `Spring Petclinic Metrics` Dashboard is available at the URL http://localhost/grafana/d/69JXeR0iw/spring-petclinic-metrics.
 You will find the JSON configuration file here: [docker/grafana/dashboards/grafana-petclinic-dashboard.json]().
 * You may create your own dashboard or import the [Micrometer/SpringBoot dashboard](https://grafana.com/dashboards/4701) via the Import Dashboard menu item.
 The id for this dashboard is `4701`.

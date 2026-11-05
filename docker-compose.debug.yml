@@ -1,0 +1,39 @@
+# Optional override publishing every service port directly on the host, bypassing the reverse proxy.
+# Usage: docker compose -f docker-compose.yml -f docker-compose.debug.yml up -d
+services:
+  config-server:
+    ports:
+      - 8888:8888
+  discovery-server:
+    ports:
+      - 8761:8761
+  customers-service:
+    ports:
+      - 8081:8081
+  visits-service:
+    ports:
+      - 8082:8082
+  vets-service:
+    ports:
+      - 8083:8083
+  genai-service:
+    ports:
+      - 8084:8084
+  api-gateway:
+    ports:
+      - 8080:8080
+  admin-server:
+    ports:
+      - 9090:9090
+  tracing-server:
+    ports:
+      - 9411:9411
+  prometheus-server:
+    # Served under /prometheus/: http://localhost:9091/prometheus/
+    ports:
+      - 9091:9090
+  grafana-server:
+    environment:
+      GF_SERVER_ROOT_URL: "%(protocol)s://%(domain)s:3030/"
+    ports:
+      - 3030:3000

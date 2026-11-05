@@ -8,6 +8,8 @@ global:
 # Here it's Prometheus itself.
 scrape_configs:
 - job_name: prometheus
+  # Prometheus runs with --web.external-url=/prometheus/ (see docker-compose.yml)
+  metrics_path: /prometheus/metrics
   static_configs:
   - targets: ['localhost:9090']
 
