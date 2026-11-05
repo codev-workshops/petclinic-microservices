@@ -1,6 +1,6 @@
 FROM eclipse-temurin:17 AS builder
 WORKDIR application
-ARG ARTIFACT_NAME
+ARG ARTIFACT_NAME=*
 COPY ${ARTIFACT_NAME}.jar application.jar
 RUN java -Djarmode=layertools -jar application.jar extract
 

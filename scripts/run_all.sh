@@ -7,10 +7,12 @@ set -o pipefail
 
 pkill -9 -f spring-petclinic || echo "Failed to kill any apps"
 
-docker compose kill || echo "No docker containers are running"
+COMPOSE="docker compose -f docker-compose.yml -f docker-compose.debug.yml"
+
+$COMPOSE kill || echo "No docker containers are running"
 
 echo "Running infra"
-docker compose up -d grafana-server prometheus-server tracing-server
+$COMPOSE up -d grafana-server prometheus-server tracing-server
 
 echo "Running apps"
 mkdir -p target
