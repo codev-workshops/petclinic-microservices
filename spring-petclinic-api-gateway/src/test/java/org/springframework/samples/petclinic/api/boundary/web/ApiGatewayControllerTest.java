@@ -50,7 +50,7 @@ class ApiGatewayControllerTest {
             .thenReturn(Mono.just(owner));
 
         VisitDetails visit = new VisitDetails(300, cat.id(), null, "First visit");
-        Visits visits = new Visits(List.of(visit));
+        Visits visits = new Visits(List.of(visit, new VisitDetails(301, 999, null, "Other pet")));
         Mockito
             .when(visitsServiceClient.getVisitsForPets(Collections.singletonList(cat.id())))
             .thenReturn(Mono.just(visits));

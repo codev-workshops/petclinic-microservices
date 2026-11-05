@@ -18,7 +18,12 @@ package org.springframework.samples.petclinic.discovery;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.test.context.SpringBootTest;
 
-@SpringBootTest
+@SpringBootTest(properties = {
+    "eureka.client.enabled=true",
+    "spring.cloud.discovery.enabled=true",
+    "eureka.client.register-with-eureka=false",
+    "eureka.client.fetch-registry=false"
+})
 class DiscoveryServerApplicationTests {
 
 	@Test
