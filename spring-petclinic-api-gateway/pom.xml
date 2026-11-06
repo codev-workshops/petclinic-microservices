@@ -163,6 +163,38 @@
             <version>${squareup-okhttp3.version}</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-contract-stub-runner</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <!-- Stubs published by the providers (classifier "stubs"), resolved from the reactor or local repository -->
+        <dependency>
+            <groupId>org.springframework.samples.petclinic.client</groupId>
+            <artifactId>spring-petclinic-customers-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.springframework.samples.petclinic.visits</groupId>
+            <artifactId>spring-petclinic-visits-service</artifactId>
+            <version>${project.version}</version>
+            <classifier>stubs</classifier>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>*</groupId>
+                    <artifactId>*</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <profiles>

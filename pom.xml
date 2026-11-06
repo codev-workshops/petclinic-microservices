@@ -33,6 +33,11 @@
         <chaos-monkey-spring-boot.version>3.1.0</chaos-monkey-spring-boot.version>
         <jolokia-core.version>1.7.1</jolokia-core.version>
         <datasource-micrometer.version>2.0.1</datasource-micrometer.version>
+        <!-- rest-assured 5.5.x (default of Spring Cloud Contract 5.0.0) is not compatible with Spring Framework 7 MockMvc -->
+        <rest-assured.version>6.0.0</rest-assured.version>
+        <!-- Maven plugin version only (contract dependencies come from the spring-cloud-dependencies BOM).
+             5.0.0, shipped with Spring Cloud 2025.1.0, fails in the "convert" goal with an NPE in maven-filtering; fixed in 5.0.3. -->
+        <spring-cloud-contract-maven-plugin.version>5.0.3</spring-cloud-contract-maven-plugin.version>
 
         <docker.image.prefix>springcommunity</docker.image.prefix>
         <docker.image.exposed.port>9090</docker.image.exposed.port>
@@ -49,6 +54,14 @@
 
     <dependencyManagement>
         <dependencies>
+            <!-- Imported before the Spring Cloud BOM so it takes precedence for the Spring Cloud Contract test dependencies -->
+            <dependency>
+                <groupId>io.rest-assured</groupId>
+                <artifactId>rest-assured-bom</artifactId>
+                <version>${rest-assured.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
             <dependency>
                 <groupId>org.springframework.cloud</groupId>
                 <artifactId>spring-cloud-dependencies</artifactId>
@@ -73,6 +86,24 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <build>
+        <pluginManagement>
+            <plugins>
+                <!-- Consumer-driven contract tests: generates provider tests and the "stubs" classified jar -->
+                <plugin>
+                    <groupId>org.springframework.cloud</groupId>
+                    <artifactId>spring-cloud-contract-maven-plugin</artifactId>
+                    <version>${spring-cloud-contract-maven-plugin.version}</version>
+                    <extensions>true</extensions>
+                    <configuration>
+                        <testFramework>JUNIT5</testFramework>
+                        <testMode>MOCKMVC</testMode>
+                    </configuration>
+                </plugin>
+            </plugins>
+        </pluginManagement>
+    </build>
 
     <profiles>
         <profile>
